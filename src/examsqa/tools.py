@@ -24,10 +24,7 @@ class Question:
         self.test_info = test_info
 
     def _clean_text(self, text):
-        if text is None:
-            return None
-
-        return re.sub(r"\s+", r" ", text)
+        return None if text is None else re.sub(r"\s+", r" ", text)
 
     def show(self):
         print("Question #", self.qid, self.source, self.subject, self.grade)
@@ -82,16 +79,13 @@ class TestInfo:
 
 def read_text(root_dir, test_name, encoding="utf-8"):
     with open(os.path.join(root_dir, f"{test_name}"), "r", encoding=encoding) as o:
-        txt = "\n".join(o.readlines())
-        return txt
+        return "\n".join(o.readlines())
 
 
 def get_text_from_doc(filename, encoding="utf-8"):
     try:
         doc = docx.Document(filename)
-        full_text = []
-        for para in doc.paragraphs:
-            full_text.append(para.text)
+        full_text = [para.text for para in doc.paragraphs]
         return "\n".join(full_text)
     except:
         return textract.process(filename).decode(encoding)
@@ -113,7 +107,7 @@ def get_text_with_br(tag, result=""):
 def parse_paragraph(p, with_br=False):
     top, left = re.search(r"top:(\-?\d+)px;left:(\-?\d+)px", p["style"]).groups()
 
-    return int(top), int(left), p.text if not with_br else get_text_with_br(p)
+    return int(top), int(left), get_text_with_br(p) if with_br else p.text
 
 
 def get_text_from_html(
@@ -138,9 +132,8 @@ def get_text_from_html(
         if not ps:
             if not soup.select(f"#page{i+1}-div > p"):
                 break
-            else:
-                i += 1
-                continue
+            i += 1
+            continue
         ps = map(lambda x: parse_paragraph(x, with_br), ps)
 
         prev_top = 0
@@ -157,16 +150,16 @@ def get_text_from_html(
     rows = OrderedDict(rows)
     ltr_sorting = map(lambda x: sorted(x, key=lambda r: r[0]), rows.values())
     ltr_filter = [y for x in ltr_sorting for y in x if y[0] >= min_left and y[0] <= max_left]
-    text = join_char.join([x[1] for x in ltr_filter]).replace("\xa0", " ").replace("\uf0b7", "")
-
-    return text
+    return (
+        join_char.join([x[1] for x in ltr_filter])
+        .replace("\xa0", " ")
+        .replace("\uf0b7", "")
+    )
 
 
 def read_answers_file(test_name, root_dir="ocrs"):
     path = Path(test_name)
-    txt = read_text(Path(root_dir) / path.stem, "answers.txt")
-
-    return txt
+    return read_text(Path(root_dir) / path.stem, "answers.txt")
 
 
 def export_questions(data, path):

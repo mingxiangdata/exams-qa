@@ -79,7 +79,7 @@ def main():
     port = args.port
 
     for path in args.question_paths:
-        updated_questions = list()
+        updated_questions = []
         resolved_contexts = []
         raw_contexts = []
         f_context = partial(query_es_bulk, host=host, port=port)
@@ -87,8 +87,13 @@ def main():
         with jsonlines.open(path) as reader:
             questions = list(reader)
 
-            for result in tqdm(Pool().imap(f_context, questions), total=len(questions)):
-                resolved_contexts.append(result)
+            resolved_contexts.extend(
+                iter(
+                    tqdm(
+                        Pool().imap(f_context, questions), total=len(questions)
+                    )
+                )
+            )
 
             for question, per_choice_contexts in zip(questions, resolved_contexts):
                 raw_context = {}
@@ -105,10 +110,10 @@ def main():
         base = os.path.basename(path)
         name = os.path.splitext(base)[0]
 
-        with jsonlines.open(os.path.join(base_dir, name + "_with_hits.jsonl"), "w") as writer:
+        with jsonlines.open(os.path.join(base_dir, f"{name}_with_hits.jsonl"), "w") as writer:
             writer.write_all(raw_contexts)
 
-        with jsonlines.open(os.path.join(base_dir, name + "_with_para.jsonl"), "w") as writer:
+        with jsonlines.open(os.path.join(base_dir, f"{name}_with_para.jsonl"), "w") as writer:
             writer.write_all(updated_questions)
 
 

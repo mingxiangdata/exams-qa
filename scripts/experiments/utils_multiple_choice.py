@@ -95,7 +95,7 @@ class RaceProcessor(DataProcessor):
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} train".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} train")
         high = os.path.join(data_dir, "train/high")
         middle = os.path.join(data_dir, "train/middle")
         high = self._read_txt(high)
@@ -104,7 +104,7 @@ class RaceProcessor(DataProcessor):
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} dev".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} dev")
         high = os.path.join(data_dir, "dev/high")
         middle = os.path.join(data_dir, "dev/middle")
         high = self._read_txt(high)
@@ -113,7 +113,7 @@ class RaceProcessor(DataProcessor):
 
     def get_test_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} test".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} test")
         high = os.path.join(data_dir, "test/high")
         middle = os.path.join(data_dir, "test/middle")
         high = self._read_txt(high)
@@ -126,7 +126,7 @@ class RaceProcessor(DataProcessor):
 
     def _read_txt(self, input_dir):
         lines = []
-        files = glob.glob(input_dir + "/*txt")
+        files = glob.glob(f"{input_dir}/*txt")
         for file in tqdm.tqdm(files, desc="read files"):
             with open(file, "r", encoding="utf-8") as fin:
                 data_raw = json.load(fin)
@@ -137,8 +137,8 @@ class RaceProcessor(DataProcessor):
     def _create_examples(self, lines, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
-        for (_, data_raw) in enumerate(lines):
-            race_id = "%s-%s" % (set_type, data_raw["race_id"])
+        for data_raw in lines:
+            race_id = f'{set_type}-{data_raw["race_id"]}'
             article = data_raw["article"]
             for i in range(len(data_raw["answers"])):
                 truth = str(ord(data_raw["answers"][i]) - ord("A"))
@@ -167,22 +167,21 @@ class SwagProcessor(DataProcessor):
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} train".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} train")
         return self._create_examples(self._read_csv(os.path.join(data_dir, "train.csv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} dev".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} dev")
         return self._create_examples(self._read_csv(os.path.join(data_dir, "val.csv")), "dev")
 
     def get_test_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} dev".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} dev")
         raise ValueError(
             "For swag testing, the input file does not contain a label column. It can not be tested in current code"
             "setting!"
         )
-        return self._create_examples(self._read_csv(os.path.join(data_dir, "test.csv")), "test")
 
     def get_labels(self):
         """See base class."""
@@ -197,7 +196,7 @@ class SwagProcessor(DataProcessor):
         if type == "train" and lines[0][-1] != "label":
             raise ValueError("For training, the input file must contain a label column.")
 
-        examples = [
+        return [
             InputExample(
                 example_id=line[2],
                 question=line[5],  # in the swag dataset, the
@@ -210,8 +209,6 @@ class SwagProcessor(DataProcessor):
             for line in lines[1:]  # we skip the line with the column names
         ]
 
-        return examples
-
 
 class ArcProcessor(DataProcessor):
     """Processor for the ARC data set (request from allennlp)."""
@@ -221,7 +218,7 @@ class ArcProcessor(DataProcessor):
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} train".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} train")
         return self._create_examples(
             self._read_json(os.path.join(data_dir, "train.jsonl")),
             "train",
@@ -230,13 +227,13 @@ class ArcProcessor(DataProcessor):
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {} dev".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} dev")
         return self._create_examples(
             self._read_json(os.path.join(data_dir, "dev.jsonl")), "dev", para_type=self.para_type
         )
 
     def get_test_examples(self, data_dir):
-        logger.info("LOOKING AT {} test".format(data_dir))
+        logger.info(f"LOOKING AT {data_dir} test")
         return self._create_examples(
             self._read_json(os.path.join(data_dir, "test.jsonl")), "test", para_type=self.para_type
         )
@@ -247,8 +244,7 @@ class ArcProcessor(DataProcessor):
 
     def _read_json(self, input_file):
         with open(input_file, "r", encoding="utf-8") as fin:
-            lines = fin.readlines()
-            return lines
+            return fin.readlines()
 
     def _create_examples(self, lines, type, para_type="per_choice"):
         """Creates examples for the training and dev sets."""
@@ -267,8 +263,10 @@ class ArcProcessor(DataProcessor):
                 para_context = " ".join(
                     [ch["text"].strip() for ch in data_raw["question"]["choices"]]
                 )
-                for oi in range(len(data_raw["question"]["choices"])):
-                    contexts.append(para_context)
+                contexts.extend(
+                    para_context for _ in range(len(data_raw["question"]["choices"]))
+                )
+
             else:
                 raise Exception('para_type "{0}" is not supported!'.format(para_type))
 
@@ -359,8 +357,10 @@ class ExamsProcessor(ArcProcessor):
                 para_context = " ".join(
                     [ch["text"].strip() for ch in data_raw["question"]["choices"]]
                 )
-                for oi in range(len(data_raw["question"]["choices"])):
-                    contexts.append(para_context)
+                contexts.extend(
+                    para_context for _ in range(len(data_raw["question"]["choices"]))
+                )
+
             elif para_type == "ignore":
                 contexts += [""] * len(data_raw["question"]["choices"])
             else:
@@ -461,18 +461,19 @@ def convert_examples_to_features(
         if ex_index % 10000 == 0:
             logger.info("Writing example %d of %d" % (ex_index, len(examples)))
         choices_features = []
-        for ending_idx, (context, ending) in enumerate(zip(example.contexts, example.endings)):
+        for context, ending in zip(example.contexts, example.endings):
             if not kb_masking:
                 text_a = context
-                if example.question.find("_") != -1:
-                    # this is for cloze question
-                    text_b = example.question.replace("_", ending)
-                else:
-                    text_b = example.question + " " + ending
+                text_b = (
+                    example.question.replace("_", ending)
+                    if example.question.find("_") != -1
+                    else f"{example.question} {ending}"
+                )
+
             else:
                 # Hack for RoBERTa, this is a work-around for empty texts.
                 text_b = ending if ending != "" else "empty"
-                text_a = example.question + " " + context
+                text_a = f"{example.question} {context}"
 
             inputs = tokenizer.encode_plus(
                 text_a,
@@ -518,15 +519,15 @@ def convert_examples_to_features(
 
         if ex_index < 2:
             logger.info("*** Example ***")
-            logger.info("race_id: {}".format(example.example_id))
+            logger.info(f"race_id: {example.example_id}")
             for choice_idx, (input_ids, attention_mask, token_type_ids) in enumerate(
                 choices_features
             ):
-                logger.info("choice: {}".format(choice_idx))
-                logger.info("input_ids: {}".format(" ".join(map(str, input_ids))))
-                logger.info("attention_mask: {}".format(" ".join(map(str, attention_mask))))
-                logger.info("token_type_ids: {}".format(" ".join(map(str, token_type_ids))))
-                logger.info("label: {}".format(label))
+                logger.info(f"choice: {choice_idx}")
+                logger.info(f'input_ids: {" ".join(map(str, input_ids))}')
+                logger.info(f'attention_mask: {" ".join(map(str, attention_mask))}')
+                logger.info(f'token_type_ids: {" ".join(map(str, token_type_ids))}')
+                logger.info(f"label: {label}")
 
         answers_mask = np.ones(len(choices_features), np.int32)
         if isinstance(example, InputExampleEXAMS):
@@ -552,4 +553,4 @@ processors = {
 }
 
 
-MULTIPLE_CHOICE_TASKS_NUM_LABELS = {"race", 4, "swag", 4, "arc", 4, "exams", 5}
+MULTIPLE_CHOICE_TASKS_NUM_LABELS = {"race", "swag", "arc", 4, "exams", 5}

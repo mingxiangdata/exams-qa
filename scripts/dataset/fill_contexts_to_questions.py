@@ -9,7 +9,7 @@ def read_contexts(contexts_path):
     contexts = {}
     with jsonlines.open(contexts_path) as reader:
         for hit in tqdm(reader, desc="Loading contexts"):
-            contexts.update(hit)
+            contexts |= hit
     return contexts
 
 
