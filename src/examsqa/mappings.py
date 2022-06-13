@@ -100,12 +100,11 @@ index_mapping = {
 
 subj_groups_mapper = {}
 for cat, subjects in subj_groups.items():
-    subj_groups_mapper.update({subj: cat for subj in subjects})
+    subj_groups_mapper |= {subj: cat for subj in subjects}
 
 
 def get_subject_name(subject: str) -> str:
-    subject = subject_combine_map.get(subject, subject)
-    return subject
+    return subject_combine_map.get(subject, subject)
 
 
 def get_subject_group(subject: str) -> str:

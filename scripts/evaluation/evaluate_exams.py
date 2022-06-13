@@ -91,10 +91,13 @@ def eval_exams(
         exams_eval["fine_grained"] = json.loads(
             json.dumps(
                 {k: v for k, v in fine_eval.items() if k in granularity},
-                default=lambda x: x.__dict__ if not isinstance(x, Result) else x.toJSON(),
+                default=lambda x: x.toJSON()
+                if isinstance(x, Result)
+                else x.__dict__,
                 sort_keys=True,
             )
         )
+
 
     return exams_eval
 

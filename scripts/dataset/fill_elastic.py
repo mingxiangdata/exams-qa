@@ -13,15 +13,13 @@ from tqdm import tqdm
 
 
 def create_doc(title, url, text, page):
-    doc = {
+    return {
         "title": title,
         "url": url,
         "text": text,
         "page": page,
         "timestamp": datetime.now(),
     }
-
-    return doc
 
 
 def create_index(es_client, index_name, schema):
@@ -35,13 +33,11 @@ def push_actions(actions, host, port):
 
 
 def split_text_paragraph(article):
-    paragraphs = [x.strip() for x in re.split(r"\n+", article["text"])]
-    return paragraphs
+    return [x.strip() for x in re.split(r"\n+", article["text"])]
 
 
 def split_text_sliding_window(text, window, stride):
-    paragraphs = [text[i : (i + window)] for i in range(0, len(text), stride)]
-    return paragraphs
+    return [text[i : (i + window)] for i in range(0, len(text), stride)]
 
 
 def file_to_actions(file_path, index_name, strategy, stride, window):
